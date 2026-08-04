@@ -65,6 +65,7 @@ function fmtBytes(b){
 function pct(used,limit){ return limit>0 ? used/limit*100 : 0; }
 function stateOf(p){
   if(p>100) return 'over';
+  if(p>=100) return 'full';
   if(p>=WARN_PCT) return 'warn';
   return 'ok';
 }
@@ -73,7 +74,7 @@ function gauge(label, used, limit, unit, fmt){
   const st = stateOf(p);
   const val = fmt ? fmt(used,limit) : (used + (unit?' '+unit:''));
   const full = fmt ? fmt(limit) : (limit + (unit?' '+unit:''));
-  const tag = p>100 ? '<span class="warn-tag">超出上限</span>' : (p>=WARN_PCT ? `<span class="warn-tag">≥80% 警戒</span>` : '');
+  const tag = p>100 ? '<span class="warn-tag">超出上限</span>' : (p>=100 ? '<span class="warn-tag">已達上限</span>' : (p>=WARN_PCT ? `<span class="warn-tag">≥80% 警戒</span>` : ''));
   return `<div class="gauge">
     <div class="g-top"><span class="g-label">${label}</span><span class="g-val ${st==='over'?'over':''}">${val} / ${full} (${p.toFixed(1)}%)${tag}</span></div>
     <div class="track ${st!=='ok'?'warned':''}"><div class="fill ${st}" style="width:${Math.min(100,p)}%"></div><div class="warn-line"></div></div>
