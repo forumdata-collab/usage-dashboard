@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>免費資源使用量儀表板</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+background:radial-gradient(1200px 800px at 50% -10%,#1a2a4a 0%,#10142a 55%,#0a0d1e 100%);color:#fff;min-height:100vh;padding-bottom:30px}
+.app{max-width:520px;margin:0 auto;padding:0 16px}
+.header{display:flex;justify-content:space-between;align-items:center;padding:16px 0 6px;position:sticky;top:0;background:rgba(10,14,30,.9);backdrop-filter:blur(10px);z-index:10}
+.header h1{font-size:17px;font-weight:800;background:linear-gradient(90deg,#ffd700,#ff8c00);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:.5px}
+.header .meta{font-size:11px;color:rgba(255,255,255,.45);text-align:right;line-height:1.5}
+.header .meta button{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#ddd;border-radius:10px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit;margin-top:2px}
+/* 警報橫幅 */
+.banner{display:none;margin:10px 0;padding:12px 14px;border-radius:14px;background:rgba(255,80,60,.14);border:1.5px solid rgba(255,90,70,.5);color:#ffb3a8;font-size:13px;font-weight:700;line-height:1.7}
+.banner.show{display:block}
+/* 來源卡 */
+.src-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:16px 16px 14px;margin-bottom:14px}
+.src-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+.src-name{font-size:16px;font-weight:800;color:#fff}
+.src-sub{font-size:10.5px;color:rgba(255,255,255,.4);font-weight:600}
+.src-acc{font-size:10.5px;color:rgba(255,255,255,.4);text-align:right;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 量錶 */
+.gauge{margin-bottom:16px}
+.gauge:last-child{margin-bottom:4px}
+.g-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.g-label{font-size:13px;font-weight:700;color:rgba(255,255,255,.85)}
+.g-val{font-size:12px;font-weight:800;color:#ffd700}
+.g-val.over{color:#ff6b5e}
+.track{position:relative;height:14px;border-radius:8px;background:rgba(255,255,255,.08);overflow:hidden}
+.fill{position:absolute;left:0;top:0;bottom:0;border-radius:8px;background:linear-gradient(90deg,#4ade80,#16a34a);transition:width .6s ease;width:0}
+.fill.warn{background:linear-gradient(90deg,#ffd700,#ff8c00)}
+.fill.over{background:linear-gradient(90deg,#ff6b5e,#e3350d)}
+/* 80% 警戒線 */
+.warn-line{position:absolute;left:80%;top:0;bottom:0;width:2px;background:rgba(255,255,255,.75);box-shadow:0 0 6px rgba(255,255,255,.5);z-index:2}
+.track.warned .warn-line{background:#ff6b5e;box-shadow:0 0 8px rgba(255,107,94,.8)}
+/* 警戒標記 */
+.warn-tag{display:inline-block;background:rgba(255,107,94,.18);color:#ff8a80;border:1px solid rgba(255,107,94,.5);font-size:10px;font-weight:800;border-radius:8px;padding:2px 7px;margin-left:8px;vertical-align:2px}
+.err-note{margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(255,120,60,.1);border:1px dashed rgba(255,150,90,.4);color:#ffb38a;font-size:12px;line-height:1.6}
+footer{text-align:center;padding:14px 16px 24px;font-size:11px;color:rgba(255,255,255,.35);line-height:1.8}
+@media (prefers-reduced-motion:reduce){.fill{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>免費資源使用量</h1>
+    <div class="meta" id="meta">載入中…<br><button onclick="loadData()">↻ 重新整理</button></div>
+  </div>
+  <div class="banner" id="banner"></div>
+  <div id="cards"></div>
+  <footer>數據由 VM 每 3 小時自動更新<br>警戒線 80% — 超過即標紅警告</footer>
+</div>
+<script>
+const WARN_PCT = 80;
+function fmtBytes(b){
+  if(b==null||isNaN(b)) return '–';
+  const u=['B','KB','MB','GB','TB']; let i=0;
+  while(b>=1024&&i<u.length-1){b/=1024;i++;}
+  return b.toFixed(i===0?0:(b>=100?0:1))+' '+u[i];
+}
+function pct(used,limit){ return limit>0 ? used/limit*100 : 0; }
+function stateOf(p){
+  if(p>100) return 'over';
+  if(p>=WARN_PCT) return 'warn';
+  return 'ok';
+}
+function gauge(label, used, limit, unit, fmt){
+  const p = pct(used,limit);
+  const st = stateOf(p);
+  const val = fmt ? fmt(used,limit) : (used + (unit?' '+unit:''));
+  const full = fmt ? fmt(limit) : (limit + (unit?' '+unit:''));
+  const tag = p>100 ? '<span class="warn-tag">超出上限</span>' : (p>=WARN_PCT ? `<span class="warn-tag">≥80% 警戒</span>` : '');
+  return `<div class="gauge">
+    <div class="g-top"><span class="g-label">${label}</span><span class="g-val ${st==='over'?'over':''}">${val} / ${full} (${p.toFixed(1)}%)${tag}</span></div>
+    <div class="track ${st!=='ok'?'warned':''}"><div class="fill ${st}" style="width:${Math.min(100,p)}%"></div><div class="warn-line"></div></div>
+  </div>`;
+}
+function card(name, sub, acc, body){
+  return `<div class="src-card"><div class="src-head"><div><div class="src-name">${name}</div><div class="src-sub">${sub||''}</div></div><div class="src-acc">${acc||''}</div></div>${body}</div>`;
+}
+function errCard(name, msg){
+  return card(name, '無法取得數據', '', `<div class="err-note">⚠ ${msg}</div>`);
+}
+function render(d){
+  const cards = document.getElementById('cards');
+  cards.innerHTML = '';
+  let alerts = [];
+  const banner = document.getElementById('banner');
+
+  // ---- Oracle ----
+  const o = d.oracle||{};
+  if(o.error){ cards.innerHTML += errCard('Oracle Cloud', o.error); }
+  else {
+    const ocompute = pct(o.compute.used, o.compute.limit);
+    const oram = pct(o.ram.used, o.ram.limit);
+    const ostorage = pct(o.storage.used, o.storage.limit);
+    if(ocompute>=WARN_PCT) alerts.push(`Oracle 運算 ${ocompute.toFixed(0)}%`);
+    if(oram>=WARN_PCT) alerts.push(`Oracle 記憶體 ${oram.toFixed(0)}%`);
+    if(ostorage>=WARN_PCT) alerts.push(`Oracle 儲存 ${ostorage.toFixed(0)}%`);
+    cards.innerHTML += card('Oracle Cloud', '免費方案', `${o.instances_running||0} 部實例運行中`,
+      gauge('運算 (Ampere A1)', o.compute.used, o.compute.limit, o.compute.unit) +
+      gauge('記憶體', o.ram.used, o.ram.limit, o.ram.unit) +
+      gauge('儲存 (啟動+區塊)', o.storage.used, o.storage.limit, o.storage.unit));
+  }
+
+  // ---- Cloudflare ----
+  const cf = d.cloudflare||{};
+  if(cf.error){ cards.innerHTML += errCard('Cloudflare', cf.error); }
+  else {
+    if(cf.workers_scripts && pct(cf.workers_scripts.used, cf.workers_scripts.limit)>=WARN_PCT)
+      alerts.push(`CF Workers 腳本`);
+    if(cf.r2_buckets && pct(cf.r2_buckets.used, cf.r2_buckets.limit)>=WARN_PCT)
+      alerts.push(`CF R2 桶`);
+    let body = '';
+    if(cf.workers_scripts) body += gauge('Workers 腳本', cf.workers_scripts.used, cf.workers_scripts.limit, cf.workers_scripts.unit);
+    if(cf.page_rules) body += gauge('Page Rules', cf.page_rules.used, cf.page_rules.limit, cf.page_rules.unit);
+    if(cf.r2_buckets) body += gauge('R2 儲存桶', cf.r2_buckets.used, cf.r2_buckets.limit, cf.r2_buckets.unit);
+    cards.innerHTML += card('Cloudflare', '免費方案', 'hermesagent.de5.net', body);
+  }
+
+  // ---- Google Drive ----
+  const g = d.drive||{};
+  if(g.error){ cards.innerHTML += errCard('Google Drive', g.error); }
+  else {
+    const p = pct(g.storage.used, g.storage.limit);
+    if(p>=WARN_PCT) alerts.push(`Drive 儲存 ${p.toFixed(0)}%`);
+    cards.innerHTML += card('Google Drive', '免費儲存空間', g.account||'',
+      gauge('儲存空間', g.storage.used, g.storage.limit, '', fmtBytes));
+  }
+
+  // ---- GitHub ----
+  const gh = d.github||{};
+  if(gh.error){ cards.innerHTML += errCard('GitHub', gh.error); }
+  else {
+    const p = pct(gh.storage.used, gh.storage.limit);
+    if(p>=WARN_PCT) alerts.push(`GitHub 儲存 ${p.toFixed(0)}%`);
+    cards.innerHTML += card('GitHub', '免費方案', `${gh.repos||0} 個 repo`,
+      gauge('倉庫儲存空間', gh.storage.used, gh.storage.limit, '', fmtBytes) +
+      (gh.actions_limit_min?`<div class="g-top" style="margin-top:10px"><span class="g-label">Actions 分鐘數</span><span class="g-val">${gh.actions_limit_min} 分鐘/月 (額度)</span></div><div style="font-size:11px;color:rgba(255,255,255,.4)">GitHub API 不提供用量查詢，顯示固定額度</div>`:''));
+  }
+
+  // ---- Banner ----
+  if(alerts.length){
+    banner.className='banner show';
+    banner.innerHTML = '⚠ 已達警戒線：' + alerts.join('、') + '<br><span style="font-weight:600;font-size:12px">請注意用量或考慮升級</span>';
+  } else {
+    banner.className='banner';
+  }
+}
+async function loadData(){
+  try{
+    const r = await fetch('usage.json?cb='+Date.now(), {cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    render(d);
+    const t = d.generated_at ? new Date(d.generated_at).toLocaleString('zh-Hant',{hour12:false}) : '?';
+    document.getElementById('meta').innerHTML = `更新：${t}<br><button onclick="loadData()">↻ 重新整理</button>`;
+  }catch(e){
+    document.getElementById('cards').innerHTML = errCard('載入失敗', e.message+' — 請確認 usage.json 已部署');
+    document.getElementById('meta').innerHTML = `載入失敗<br><button onclick="loadData()">↻ 重試</button>`;
+  }
+}
+loadData();
+</script>
+</body>
+</html>
