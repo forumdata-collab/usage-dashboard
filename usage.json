@@ -1,22 +1,22 @@
 {
-  "generated_at": "2026-08-04T22:00:01Z",
+  "generated_at": "2026-08-04T22:54:16Z",
   "oracle": {
     "compute": {
-      "used": 0.0,
+      "used": 4.0,
       "limit": 4.0,
       "unit": "OCPU"
     },
     "ram": {
-      "used": 0.0,
+      "used": 24.0,
       "limit": 24.0,
       "unit": "GB"
     },
     "storage": {
-      "used": 0,
+      "used": 100,
       "limit": 200.0,
       "unit": "GB"
     },
-    "instances_running": 0
+    "instances_running": 1
   },
   "cloudflare": {
     "workers_scripts": {
@@ -50,7 +50,7 @@
   },
   "github": {
     "storage": {
-      "used": 3935232,
+      "used": 3937280,
       "limit": 976562499,
       "unit": "bytes"
     },
