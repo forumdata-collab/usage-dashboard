@@ -92,22 +92,6 @@ function render(d){
   let alerts = [];
   const banner = document.getElementById('banner');
 
-  // ---- Oracle ----
-  const o = d.oracle||{};
-  if(o.error){ cards.innerHTML += errCard('Oracle Cloud', o.error); }
-  else {
-    const ocompute = pct(o.compute.used, o.compute.limit);
-    const oram = pct(o.ram.used, o.ram.limit);
-    const ostorage = pct(o.storage.used, o.storage.limit);
-    if(ocompute>=WARN_PCT) alerts.push(`Oracle 運算 ${ocompute.toFixed(0)}%`);
-    if(oram>=WARN_PCT) alerts.push(`Oracle 記憶體 ${oram.toFixed(0)}%`);
-    if(ostorage>=WARN_PCT) alerts.push(`Oracle 儲存 ${ostorage.toFixed(0)}%`);
-    cards.innerHTML += card('Oracle Cloud', '免費方案', `${o.instances_running||0} 部實例運行中`,
-      gauge('運算 (Ampere A1)', o.compute.used, o.compute.limit, o.compute.unit) +
-      gauge('記憶體', o.ram.used, o.ram.limit, o.ram.unit) +
-      gauge('儲存 (啟動+區塊)', o.storage.used, o.storage.limit, o.storage.unit));
-  }
-
   // ---- Cloudflare ----
   const cf = d.cloudflare||{};
   if(cf.error){ cards.innerHTML += errCard('Cloudflare', cf.error); }
