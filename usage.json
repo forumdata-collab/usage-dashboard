@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-08T01:00:01Z",
+  "generated_at": "2026-08-08T04:00:01Z",
   "oracle": {
     "compute": {
       "used": 4.0,
@@ -41,16 +41,11 @@
     }
   },
   "drive": {
-    "storage": {
-      "used": 20071354531,
-      "limit": 5497558138880,
-      "unit": "bytes"
-    },
-    "account": "pkmhkdetector@gmail.com"
+    "error": "HTTP Error 400: Bad Request"
   },
   "github": {
     "storage": {
-      "used": 6568960,
+      "used": 6573056,
       "limit": 976562499,
       "unit": "bytes"
     },
