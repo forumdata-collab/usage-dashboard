@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-04T01:00:01Z",
+  "generated_at": "2026-10-04T04:00:02Z",
   "oracle": {
     "compute": {
       "used": 4.0,
@@ -20,7 +20,7 @@
   },
   "cloudflare": {
     "workers_scripts": {
-      "used": 17,
+      "used": 19,
       "limit": 100,
       "unit": "scripts"
     },
