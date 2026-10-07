@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-07T10:00:02Z",
+  "generated_at": "2026-10-07T13:00:01Z",
   "oracle": {
     "compute": {
       "used": 4.0,
@@ -30,7 +30,7 @@
       "unit": "buckets"
     },
     "pages_projects": {
-      "used": 71,
+      "used": 73,
       "limit": 100,
       "unit": "projects"
     },
