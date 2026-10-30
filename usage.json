@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-30T10:00:02Z",
+  "generated_at": "2026-10-30T13:00:01Z",
   "oracle": {
     "compute": {
       "used": 4.0,
@@ -47,7 +47,7 @@
   },
   "drive": {
     "storage": {
-      "used": 332907294306,
+      "used": 334858677203,
       "limit": 5497558138880,
       "unit": "bytes"
     },
