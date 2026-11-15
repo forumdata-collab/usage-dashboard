@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-15T01:00:02Z",
+  "generated_at": "2026-11-15T04:00:01Z",
   "oracle": {
     "compute": {
       "used": 4.0,
@@ -20,7 +20,7 @@
   },
   "cloudflare": {
     "workers_scripts": {
-      "used": 28,
+      "used": 29,
       "limit": 100,
       "unit": "scripts"
     },
@@ -30,7 +30,7 @@
       "unit": "buckets"
     },
     "pages_projects": {
-      "used": 99,
+      "used": 100,
       "limit": 100,
       "unit": "projects"
     },
@@ -55,7 +55,7 @@
   },
   "github": {
     "storage": {
-      "used": 8024302592,
+      "used": 8024310784,
       "limit": 976562499,
       "unit": "bytes"
     },
