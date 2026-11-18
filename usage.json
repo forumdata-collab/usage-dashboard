@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-18T04:00:02Z",
+  "generated_at": "2026-11-18T07:00:02Z",
   "oracle": {
     "compute": {
       "used": 4.0,
@@ -23,6 +23,11 @@
       "used": 30,
       "limit": 100,
       "unit": "scripts"
+    },
+    "r2_buckets": {
+      "used": 1,
+      "limit": 100,
+      "unit": "buckets"
     },
     "pages_projects": {
       "used": 100,
@@ -50,7 +55,7 @@
   },
   "github": {
     "storage": {
-      "used": 8022584320,
+      "used": 8023207936,
       "limit": 976562499,
       "unit": "bytes"
     },
