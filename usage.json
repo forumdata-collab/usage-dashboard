@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-18T22:00:02Z",
+  "generated_at": "2026-11-19T01:00:02Z",
   "oracle": {
     "compute": {
       "used": 4.0,
@@ -55,7 +55,7 @@
   },
   "github": {
     "storage": {
-      "used": 8023420928,
+      "used": 8023432192,
       "limit": 976562499,
       "unit": "bytes"
     },
