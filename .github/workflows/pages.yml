@@ -19,8 +19,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      # v4 用 upload-artifact@v4 後端；舊 v3 偶爾「上載成功但 deploy 見唔到 artifact」
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: '.'
+      # deploy-pages 一 run 就查 artifact metadata，GitHub 索引有時慢幾百毫秒 → Found 0 artifact(s)
+      # 呢步先等到 artifact 出現（最多 90 秒），避免假失敗
+      - name: Wait for pages artifact to be indexed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          url="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?name=github-pages"
+          for i in $(seq 1 45); do
+            count=$(curl -s -H "Authorization: Bearer ${GH_TOKEN}" \
+                        -H "Accept: application/vnd.github+json" "$url" \
+                    | python3 -c 'import sys,json; print(len(json.load(sys.stdin).get("artifacts", [])))')
+            if [ "${count}" -gt 0 ]; then
+              echo "github-pages artifact indexed after ${i}s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::github-pages artifact never appeared within 90s"
+          exit 1
       - id: deployment
         uses: actions/deploy-pages@v4
