@@ -37,7 +37,8 @@ jobs:
                         -H "Accept: application/vnd.github+json" "$url" \
                     | python3 -c 'import sys,json; print(len(json.load(sys.stdin).get("artifacts", [])))')
             if [ "${count}" -gt 0 ]; then
-              echo "github-pages artifact visible after ${i} attempt(s)"
+              echo "github-pages artifact visible after ${i} attempt(s); settling 10s for the twirp index"
+              sleep 10
               exit 0
             fi
             sleep 2
