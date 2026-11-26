@@ -7,6 +7,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: read        # deploy-pages 要讀 artifact metadata
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -14,34 +15,52 @@ jobs:
   deploy:
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deploy3.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-      # v4 用 upload-artifact@v4 後端；舊 v3 偶爾「上載成功但 deploy 見唔到 artifact」
       - uses: actions/upload-pages-artifact@v4
         with:
           path: '.'
-      # deploy-pages 一 run 就查 artifact metadata，GitHub 索引有時慢幾百毫秒 → Found 0 artifact(s)
-      # 呢步先等到 artifact 出現（最多 90 秒），避免假失敗
+
+      # deploy-pages v4 用 artifact Twirp client 列 artifacts，間中滯後於 REST → 假報 "No artifacts found"。
+      # 先確認 REST 見到 artifact，再用「三次嘗試」包住 deploy。
       - name: Wait for pages artifact to be indexed
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           url="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?name=github-pages"
-          for i in $(seq 1 45); do
+          for i in $(seq 1 30); do
             count=$(curl -s -H "Authorization: Bearer ${GH_TOKEN}" \
                         -H "Accept: application/vnd.github+json" "$url" \
                     | python3 -c 'import sys,json; print(len(json.load(sys.stdin).get("artifacts", [])))')
             if [ "${count}" -gt 0 ]; then
-              echo "github-pages artifact indexed after ${i}s"
+              echo "github-pages artifact visible after ${i} attempt(s)"
               exit 0
             fi
             sleep 2
           done
-          echo "::error::github-pages artifact never appeared within 90s"
-          exit 1
-      - id: deployment
+          echo "::warning::artifact not visible via REST after 60s; trying deploy anyway"
+
+      - id: deploy1
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Pause before retry
+        if: steps.deploy1.outcome == 'failure'
+        run: sleep 20
+
+      - id: deploy2
+        uses: actions/deploy-pages@v4
+        if: steps.deploy1.outcome == 'failure'
+        continue-on-error: true
+
+      - name: Pause before final retry
+        if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
+        run: sleep 30
+
+      - id: deploy3
+        uses: actions/deploy-pages@v4
+        if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
